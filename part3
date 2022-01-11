@@ -1,0 +1,75 @@
+module part3(ClockIn, Resetn, Start, Letter, DotDashOut);
+
+	input ClockIn, Resetn, Start;
+	
+	input [2:0] Letter;
+	
+	output DotDashOut;
+	
+	wire E;
+	
+	wire [11:0] w_store;
+	
+	reg [11:0] store;
+	
+	reg [11:0] t;
+
+	always @ (*) 
+	begin
+		case(Letter)
+			3'b000: store = 12'b101110000000; 
+			3'b001: store = 12'b111010101000;
+			3'b010: store = 12'b111010111010;
+			3'b011: store = 12'b111010100000; 
+			3'b100: store = 12'b100000000000;
+			3'b101: store = 12'b101011101000;
+			3'b110: store = 12'b111011101000;
+			3'b111: store = 12'b101010100000;
+			default: 
+				store = 12'b111111111111;
+		endcase
+	end
+
+	assign w_store = store;
+	clock_divider R0 (ClockIn, E, start);
+
+	always @ (posedge E or negedge Resetn or posedge Start) begin
+		if (Resetn == 1'b0) begin
+			t <= 12'b0;
+		end
+		else if (Start == 1'b1) begin
+			t <= w_store;
+		end
+		else begin
+			t <= (t << 1'b1) | (t >> 4'd11);
+		end
+	end
+
+	assign DotDashOut = t[0];
+
+endmodule
+
+module clock_divider(in, out, s);
+	
+	reg [19:0] count = 20'd0;
+	parameter speed = 20'd250;
+	
+	input in, s;
+	output reg out;
+	
+	always @(posedge in) begin
+		count <= count+1;
+		
+		if(count == (speed-1))
+		begin
+			count <= 20'd0;
+		end
+		
+		if (s == 1'b1)
+		begin
+			count <= 20'd0;
+		end
+		
+		out <= (count>(speed >> 1'b1))?1:0;
+	end
+endmodule
